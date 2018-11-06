@@ -28,8 +28,11 @@ find_package(catkin REQUIRED COMPONENTS
 # find_package(OpenCV REQUIRED)
 # SET(OpenCV_DIR /home/xyz/Dev/Robotics/ROBOT-box/Vision/opencv_install/build/OpenCVConfig.cmake)
 
+LINK_DIRECTORIES(${PROJECT_NAME}/lib)
+
 find_package(OpenCV REQUIRED)
 find_package(aruco REQUIRED)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -170,9 +173,10 @@ target_link_libraries(${PROJECT_NAME}_node
   ${OpenCV_LIBS}
   ${aruco_LIBS}
   stdc++fs
+  aruco
 )
 message("Aruco include libs ")
-message(${aruco_LIBS})
+# message(${aruco_LIBS})
 
 #############
 ## Install ##
