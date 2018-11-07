@@ -12,7 +12,7 @@
     <!-- <arg name="world_name" value="$(find mybot_gazebo)/worlds/mybot.world"/> -->
     <!-- <arg name="world_name" value="$(find mybot_gazebo)/worlds/world_with_aruco.world"/> -->
     <!-- <arg name="world_name" value="$(find mybot_gazebo)/worlds/small_world_with_aruco.sdf" /> -->
-    <arg name="world_name" value="$(find mybot_gazebo)/worlds/caffee.world" />
+    <arg name="world_name" value="$(find mybot_gazebo)/worlds/aruco_double.world" />
     <!-- <arg name="world_name" value="$(find mybot_gazebo)/worlds/worlds/office_small.world" /> -->
     <arg name="paused" value="$(arg paused)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
@@ -24,7 +24,7 @@
   
   <param name="robot_description" command="$(find xacro)/xacro.py '$(find mybot_description)/urdf/mybot.xacro'"/>
 
-  <node name="mybot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
+  <node name="mybot_spawn2" pkg="gazebo_ros" type="spawn_model" output="screen"
    args="-urdf -param robot_description -model mybot" />
 
 </launch>

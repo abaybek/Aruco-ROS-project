@@ -8,7 +8,7 @@ namespace amonitor_aruco
         ROS_INFO("Constructor created");
 
         std::string mmConfigFile = nh_private_.param<std::string>("markermap_config", "");
-        markerSize_ = nh_private_.param<double>("marker_size", 0.1);
+        markerSize_ = nh_private_.param<double>("marker_size", 0.5);
         
         nh_private_.param<bool>("publish_to_rviz", publishToRviz_, false);
         nh_private_.param<bool>("show_output_video", showOutputVideo_, false);
@@ -47,8 +47,6 @@ namespace amonitor_aruco
     void MonitorAruco::cameraCallback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::CameraInfoConstPtr& cinfo)
     {
         cv_bridge::CvImagePtr cv_ptr;
-        ROS_INFO("IMAGE GOT");
-        ROS_INFO_STREAM(cinfo);
         try {
             // cv::imshow("view", cv_bridge::toCvShare(image, "bgr8")->image);
             // cv::waitKey(30);
@@ -79,7 +77,7 @@ namespace amonitor_aruco
 
     void MonitorAruco::processImage(cv::Mat& frame, bool drawDetections)
     {
-        ROS_INFO("Processing started");
+        ROS_INFO("---------------------");
         std::vector<aruco::Marker> detected_markers = mDetector_.detect(frame);
         
         if(publishToRviz_){
@@ -93,9 +91,10 @@ namespace amonitor_aruco
             marker.draw(frame, cv::Scalar(0,0,255), 2);
             marker.calculateExtrinsics(markerSize_, camParams_, false);
 
-            // ROS_INFO("Rvec");
-            // ROS_INFO_STREAM(marker.Rvec);
-            // ROS_INFO_STREAM(marker.Tvec);
+            ROS_INFO("Found Rvec");
+            ROS_INFO_STREAM(marker.Rvec);
+            ROS_INFO("Found Tvec");
+            ROS_INFO_STREAM(marker.Tvec);
 
             if(camParams_.isValid()){
                 if(marker.isPoseValid()){
@@ -107,15 +106,26 @@ namespace amonitor_aruco
         }
         if (mmConfig_.isExpressedInMeters() && camParams_.isValid())
         {
+
             if (mmPoseTracker_.estimatePose(detected_markers))  // if pose correctly computed, print the reference system
                 {
                 aruco::CvDrawingUtils::draw3dAxis(frame, camParams_, mmPoseTracker_.getRvec(), mmPoseTracker_.getTvec(),
                                                   mmConfig_[0].getMarkerSize() * 2);
-                ROS_INFO("---------------------");
+                
+                std::vector<float> vec{0.0, 0.0, 0.0, 1.0};
+                cv::Mat m1( vec );
+                ROS_INFO_STREAM(m1);
+                
                 // ROS_INFO_STREAM(mmPoseTracker_.getRTMatrix());
-                ROS_INFO_STREAM(mmPoseTracker_.getTvec() * 5);
-                ROS_INFO_STREAM(mmPoseTracker_.getRvec());
-                publishCameraLocation(mmPoseTracker_.getRvec(), mmPoseTracker_.getTvec());
+                // ROS_INFO_STREAM(mmPoseTracker_.getTvec());
+                // ROS_INFO_STREAM(mmPoseTracker_.getRvec());
+                // ROS_INFO_STREAM(mmPoseTracker_.getRTMatrix());
+
+                cv::Mat tran = mmPoseTracker_.getRTMatrix().inv();
+                cv::Mat result = tran * m1;
+                // ROS_INFO_STREAM(result);
+                // ROS_INFO_STREAM();
+                publishCameraLocation(mmPoseTracker_.getRvec(), result);
                 mmPoseTracker_.reset();
                 }
         }
@@ -143,8 +153,8 @@ namespace amonitor_aruco
         tf::Quaternion quat = rodriguesToTFQuat(marker.Rvec);
         tf::quaternionTFToMsg(quat, vis_marker.pose.orientation);
         
-        vis_marker.scale.x = markerSize_ * 5;
-        vis_marker.scale.y = markerSize_ * 5;
+        vis_marker.scale.x = markerSize_;
+        vis_marker.scale.y = markerSize_;
         vis_marker.scale.z = amonitor_aruco::MonitorAruco::RVIZ_MARKER_HEIGHT;
 
         vis_marker.color.r = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_R;
@@ -165,7 +175,7 @@ namespace amonitor_aruco
         vis_marker.header.stamp = ros::Time::now();
 
         // Create the transform from the camera to the ArUco Marker Map
-        tf::Transform transform = aruco2tf(rvec, tvec * 5);
+        tf::Transform transform = aruco2tf(rvec, tvec);
         // ROS_INFO_STREAM(transform);
 
         vis_marker.ns = "basic_shapes";
@@ -181,8 +191,8 @@ namespace amonitor_aruco
         // vis_marker.pose.orientation.w = 1.0;
         tf::poseTFToMsg(transform, vis_marker.pose);
 
-        vis_marker.scale.x = markerSize_ * 5;
-        vis_marker.scale.y = markerSize_ * 5;
+        vis_marker.scale.x = markerSize_;
+        vis_marker.scale.y = markerSize_;
         vis_marker.scale.z = amonitor_aruco::MonitorAruco::RVIZ_MARKER_HEIGHT;
 
         vis_marker.color.r = 0.0f;
@@ -207,16 +217,16 @@ namespace amonitor_aruco
         vis_marker.id = marker.id;
         vis_marker.type = shape;
         vis_marker.action = visualization_msgs::Marker::ADD;
-        vis_marker.pose.position.x = ((marker.points[0].x + marker.points[1].x + marker.points[2].x + marker.points[3].x) / 4.0f) * 5.0f;
-        vis_marker.pose.position.y = ((marker.points[0].y + marker.points[1].y + marker.points[2].y + marker.points[3].y) / 4.0f) * 5.0f;
-        vis_marker.pose.position.z = ((marker.points[0].z + marker.points[1].z + marker.points[2].z + marker.points[3].z) / 4.0f) * 5.0f;
+        vis_marker.pose.position.x = ((marker.points[0].x + marker.points[1].x + marker.points[2].x + marker.points[3].x) / 4.0f);
+        vis_marker.pose.position.y = ((marker.points[0].y + marker.points[1].y + marker.points[2].y + marker.points[3].y) / 4.0f);
+        vis_marker.pose.position.z = ((marker.points[0].z + marker.points[1].z + marker.points[2].z + marker.points[3].z) / 4.0f);
         vis_marker.pose.orientation.x = 0.0;
         vis_marker.pose.orientation.y = 0.0;
         vis_marker.pose.orientation.z = 0.0;
         vis_marker.pose.orientation.w = 1.0;
 
-        vis_marker.scale.x = markerSize_ * 5;
-        vis_marker.scale.y = markerSize_ * 5;
+        vis_marker.scale.x = markerSize_;
+        vis_marker.scale.y = markerSize_;
         vis_marker.scale.z = amonitor_aruco::MonitorAruco::RVIZ_MARKER_HEIGHT;
 
         vis_marker.color.r = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_R;
