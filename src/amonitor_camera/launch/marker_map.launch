@@ -5,7 +5,7 @@
   <node pkg="amonitor_camera" type="amonitor_camera_node" name="marker_map" output="screen">
     <param name="show_output_video" value="$(arg show)" />
 
-    <param name="markermap_config" value="$(find amonitor_camera)/marker_map/map6/map6_2m.yml" />
+    <param name="markermap_config" value="$(find amonitor_camera)/marker_map/map7/map7_update.yml" />
     <param name="marker_size" value="0.5" />
     
     <param name="publish_to_rviz" value="true" />
