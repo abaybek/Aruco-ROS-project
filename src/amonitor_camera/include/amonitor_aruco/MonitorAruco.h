@@ -66,7 +66,7 @@ namespace amonitor_aruco
 
         // Visualization consts
         static constexpr double RVIZ_MARKER_HEIGHT = 0.01;
-        static constexpr double RVIZ_MARKER_LIFETIME = 0.2;
+        static constexpr double RVIZ_MARKER_LIFETIME = 0.5;
         static constexpr double RVIZ_MARKER_COLOR_R = 1.0;
         static constexpr double RVIZ_MARKER_COLOR_G = 1.0;
         static constexpr double RVIZ_MARKER_COLOR_B = 1.0;
