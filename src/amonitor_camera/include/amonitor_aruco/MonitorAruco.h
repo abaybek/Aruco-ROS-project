@@ -6,7 +6,9 @@
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>
 #include <visualization_msgs/Marker.h>
+#include <geometry_msgs/Point.h>
 #include <cv_bridge/cv_bridge.h>
+#include <string> 
 
 #include <opencv2/opencv.hpp>
 #include <experimental/filesystem>
@@ -66,6 +68,7 @@ namespace amonitor_aruco
 
         // Visualization consts
         static constexpr double RVIZ_MARKER_HEIGHT = 0.01;
+        static constexpr double RVIZ_MARKER_LIFETIME_FOREVER = 0.0;
         static constexpr double RVIZ_MARKER_LIFETIME = 0.5;
         static constexpr double RVIZ_MARKER_COLOR_R = 1.0;
         static constexpr double RVIZ_MARKER_COLOR_G = 1.0;
@@ -79,6 +82,7 @@ namespace amonitor_aruco
 
         // rviz visualization
         void publishMarker(aruco::Marker3DInfo marker);
+        void publishMarkerText(aruco::Marker3DInfo marker);
         void publishMarkerSeen(aruco::Marker marker);
         void publishCameraLocation(cv::Mat rvec, cv::Mat tvec);
 

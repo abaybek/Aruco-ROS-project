@@ -35,6 +35,9 @@ namespace amonitor_aruco
 
         if (mmConfig_.isExpressedInPixels())
             mmConfig_ = mmConfig_.convertToMeters(markerSize_);
+        
+
+        
     }
 
     MonitorAruco::~MonitorAruco()
@@ -70,8 +73,14 @@ namespace amonitor_aruco
 
         // saveInputFrame(frame);
         processImage(frame, 0);
-        cv::imshow("detections", frame);
-        cv::waitKey(30);
+        if(publishToRviz_){
+            for (auto m : mmConfig_){
+                publishMarker(m);
+                publishMarkerText(m);
+            }
+        }
+        // cv::imshow("detections", frame);
+        // cv::waitKey(30);
 
     }
 
@@ -80,27 +89,24 @@ namespace amonitor_aruco
         ROS_INFO("---------------------");
         std::vector<aruco::Marker> detected_markers = mDetector_.detect(frame);
         
-        if(publishToRviz_){
-            for (auto m : mmConfig_){
-                publishMarker(m);
-            }
-        }
 
-        for (auto marker: detected_markers){
-            ROS_INFO("found %i", marker.id);
-            marker.draw(frame, cv::Scalar(0,0,255), 2);
-            marker.calculateExtrinsics(markerSize_, camParams_, false);
+        if (drawDetections){
+            for (auto marker: detected_markers){
+                ROS_INFO("found %i", marker.id);
+                marker.draw(frame, cv::Scalar(0,0,255), 2);
+                marker.calculateExtrinsics(markerSize_, camParams_, false);
 
-            ROS_INFO("Found Rvec");
-            ROS_INFO_STREAM(marker.Rvec);
-            ROS_INFO("Found Tvec");
-            ROS_INFO_STREAM(marker.Tvec);
+                ROS_INFO("Found Rvec");
+                ROS_INFO_STREAM(marker.Rvec);
+                ROS_INFO("Found Tvec");
+                ROS_INFO_STREAM(marker.Tvec);
 
-            if(camParams_.isValid()){
-                if(marker.isPoseValid()){
-                    aruco::CvDrawingUtils::draw3dCube(frame, marker, camParams_);
-                    aruco::CvDrawingUtils::draw3dAxis(frame, marker, camParams_);
-                    // publishMarkerSeen(marker);
+                if(camParams_.isValid()){
+                    if(marker.isPoseValid()){
+                        aruco::CvDrawingUtils::draw3dCube(frame, marker, camParams_);
+                        aruco::CvDrawingUtils::draw3dAxis(frame, marker, camParams_);
+                        // publishMarkerSeen(marker);
+                    }
                 }
             }
         }
@@ -207,7 +213,7 @@ namespace amonitor_aruco
 
     void MonitorAruco::publishMarker(aruco::Marker3DInfo marker)
     {
-        static const uint32_t shape = visualization_msgs::Marker::CUBE;
+        static const uint32_t shape = visualization_msgs::Marker::LINE_STRIP;
         visualization_msgs::Marker vis_marker;
         
         vis_marker.header.frame_id = "/my_frame";
@@ -215,6 +221,49 @@ namespace amonitor_aruco
         
         vis_marker.ns = "basic_shapes";
         vis_marker.id = marker.id;
+        vis_marker.type = shape;
+        vis_marker.action = visualization_msgs::Marker::ADD;
+
+        geometry_msgs::Point p;
+        p.x = marker.points[0].x;
+        p.y = marker.points[0].y;
+        p.z = marker.points[0].z;
+
+        for( uint32_t i = 0; i < 4; i++)
+        {
+            geometry_msgs::Point p;
+            p.x = marker.points[i].x;
+            p.y = marker.points[i].y;
+            p.z = marker.points[i].z;
+            vis_marker.points.push_back(p);
+        }
+        vis_marker.points.push_back(p);
+
+        vis_marker.scale.x = 0.01;
+        // vis_marker.scale.x = markerSize_;
+        // vis_marker.scale.y = markerSize_;
+        // vis_marker.scale.z = amonitor_aruco::MonitorAruco::RVIZ_MARKER_HEIGHT;
+
+        vis_marker.color.r = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_R;
+        vis_marker.color.g = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_G;
+        vis_marker.color.b = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_B;
+        vis_marker.color.a = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_A;
+
+        vis_marker.lifetime = ros::Duration(amonitor_aruco::MonitorAruco::RVIZ_MARKER_LIFETIME);
+        marker_pub.publish(vis_marker);
+    }
+
+    void MonitorAruco::publishMarkerText(aruco::Marker3DInfo marker)
+    {
+        static const uint32_t shape = visualization_msgs::Marker::TEXT_VIEW_FACING;
+        visualization_msgs::Marker vis_marker;
+        
+        vis_marker.header.frame_id = "/my_frame";
+        vis_marker.header.stamp = ros::Time::now();
+        
+        vis_marker.ns = "basic_shapes";
+        vis_marker.id = marker.id + 2000;
+        vis_marker.text = std::to_string(marker.id);
         vis_marker.type = shape;
         vis_marker.action = visualization_msgs::Marker::ADD;
         vis_marker.pose.position.x = ((marker.points[0].x + marker.points[1].x + marker.points[2].x + marker.points[3].x) / 4.0f);
@@ -225,9 +274,8 @@ namespace amonitor_aruco
         vis_marker.pose.orientation.z = 0.0;
         vis_marker.pose.orientation.w = 1.0;
 
-        vis_marker.scale.x = markerSize_;
-        vis_marker.scale.y = markerSize_;
-        vis_marker.scale.z = amonitor_aruco::MonitorAruco::RVIZ_MARKER_HEIGHT;
+
+        vis_marker.scale.z = amonitor_aruco::MonitorAruco::RVIZ_MARKER_HEIGHT * 10;
 
         vis_marker.color.r = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_R;
         vis_marker.color.g = amonitor_aruco::MonitorAruco::RVIZ_MARKER_COLOR_G;
@@ -236,7 +284,6 @@ namespace amonitor_aruco
 
         vis_marker.lifetime = ros::Duration(amonitor_aruco::MonitorAruco::RVIZ_MARKER_LIFETIME);
         marker_pub.publish(vis_marker);
-
     }
 
     void MonitorAruco::saveInputFrame(const cv::Mat& frame)
